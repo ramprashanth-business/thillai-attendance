@@ -89,12 +89,12 @@ function send(t){if(navigator.share){navigator.share({text:t}).catch(function(){
 function openM(h){document.getElementById("md").innerHTML='<div class="ov" onclick="closeM()"></div><div class="sheet">'+h+'</div>'}
 function closeM(){document.getElementById("md").innerHTML=""}
 function confirmM(msg,label,fn){CB=fn;openM('<h2>'+esc(msg)+'</h2><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn red" onclick="var c=CB;closeM();c()">'+label+'</button></div>')}
-function top(t,s,big){return '<div class="top'+(big?' t':'')+'"><h1>'+t+'</h1><p>'+s+'</p></div>'}
+function hdr(t,s,big){return '<div class="top'+(big?' t':'')+'"><h1>'+t+'</h1><p>'+s+'</p></div>'}
 function status(){return dbErr?'⚠️ Cannot reach database':ready<7?'⏳ Loading data…':'☁️ Synced with database'}
 function entryHTML(e,acts){var t=etype(e);return '<div class="ent"><div class="eh"><span class="tp '+t+'">'+ti(t)+'</span><span class="badge">'+inr(ePay(e))+'</span></div><h3>'+esc(e.venue)+'</h3>'+e.workers.map(function(w){return '<p><span>'+esc(w.n)+' · '+lbl(w.s)+'</span><span>'+inr(rate(w.n,t)*w.s.length)+'</span></p>'}).join("")+(acts?'<div class="acts"><button class="pill" onclick="edit(\''+e.id+'\')">✏️ Edit</button><button class="pill d" onclick="del(\''+e.id+'\')">🗑️ Delete</button></div>':'')+'</div>'}
 function vEntry(){
  var l=ents(date),sh=0,pay=0,cs=0,cp=0,ks=Object.keys(f.sel);l.forEach(function(e){sh+=eSh(e);pay+=ePay(e)});ks.forEach(function(n){cs+=f.sel[n].length;cp+=f.sel[n].length*rate(n,f.t)});
- var h=top("Attendance",status(),1)+'<div class="stats"><div class="stat"><b>'+l.length+'</b><span>EVENTS</span></div><div class="stat"><b>'+sh+'</b><span>SHIFTS</span></div><div class="stat"><b>'+inr(pay)+'</b><span>DAY SALARY</span></div></div>';
+ var h=hdr("Attendance",status(),1)+'<div class="stats"><div class="stat"><b>'+l.length+'</b><span>EVENTS</span></div><div class="stat"><b>'+sh+'</b><span>SHIFTS</span></div><div class="stat"><b>'+inr(pay)+'</b><span>DAY SALARY</span></div></div>';
  if(f.id)h+='<div class="card edit"><b>✏️ Editing an entry</b><button class="pill" onclick="cancelE()">Cancel</button></div>';
  h+='<div class="card" id="form"><label>Date</label><input type="date" value="'+date+'" onchange="date=this.value;render()"><label>Work type</label><div class="seg"><button class="'+(f.t==="G"?'on':'')+'" onclick="setT(\'G\')">🏭 Godown</button><button class="'+(f.t==="M"?'on':'')+'" onclick="setT(\'M\')">🏛️ Mandapam</button></div>';
  h+='<label>'+(f.t==="G"?'Godown name (optional)':'Mandapam / hall name')+'</label><input placeholder="'+(f.t==="G"?'Godown':'e.g. Sri Mahal')+'" value="'+esc(f.venue)+'" oninput="f.venue=this.value">';
@@ -109,18 +109,18 @@ function vEntry(){
  h+='<button class="btn fab'+(cs?'':' off')+'" onclick="saveE()">'+(cs?(f.id?'Update':'Save')+' entry · '+ks.length+' workers · '+inr(cp):'Select workers to save')+'</button>';
  return h}
 function vHist(){
- var h=top("History","All entries by date")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
+ var h=hdr("History","All entries by date")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
  var ds=[];S.entries.concat(S.notes).forEach(function(e){if(e.date.slice(0,7)===month&&ds.indexOf(e.date)<0)ds.push(e.date)});ds.sort().reverse();
  if(!ds.length)return h+'<div class="empty">No entries this month</div>';
  return h+ds.map(function(d){return '<div class="card"><div class="day"><span>📅 '+fmt(d)+'</span><button class="pill" onclick="send(dayText(\''+d+'\'))">Share</button></div>'+ents(d).map(function(e){return entryHTML(e,0)}).join("")+notesHTML(d)+'</div>'}).join("")}
 function vWork(){
- var h=top("Workers","Add your team &amp; daily salary")+'<div class="card"><h2>➕ New worker</h2><label>Name</label><input id="nw" placeholder="Worker name"><label>🏭 Godown salary / day (₹)</label><input id="ng" type="number" inputmode="numeric" placeholder="e.g. 500"><label>🏛️ Mandapam salary / day (₹)</label><input id="nm" type="number" inputmode="numeric" placeholder="e.g. 800"><button class="btn" onclick="addW()">Add worker</button></div><div class="card"><h2>Team ('+S.workers.length+')</h2>';
+ var h=hdr("Workers","Add your team &amp; daily salary")+'<div class="card"><h2>➕ New worker</h2><label>Name</label><input id="nw" placeholder="Worker name"><label>🏭 Godown salary / day (₹)</label><input id="ng" type="number" inputmode="numeric" placeholder="e.g. 500"><label>🏛️ Mandapam salary / day (₹)</label><input id="nm" type="number" inputmode="numeric" placeholder="e.g. 800"><button class="btn" onclick="addW()">Add worker</button></div><div class="card"><h2>Team ('+S.workers.length+')</h2>';
  h+=S.workers.length?S.workers.map(function(w,i){return '<div class="wrow">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+'</b><small>🏭 '+inr(w.wg)+' · 🏛️ '+inr(w.wm)+'</small></div><button class="pill" onclick="editW('+i+')">Edit</button><button class="pill d" onclick="delW('+i+')">Remove</button></div>'}).join(""):'<div class="empty">No workers yet</div>';
  return h+'</div><button class="btn g" onclick="logout()">Log out</button>'}
 function report(){var r=[],g=0,ga=0;S.workers.forEach(function(w){var days={},sg=0,sm=0,a=0;S.entries.forEach(function(e){if(e.date.slice(0,7)!==month)return;e.workers.forEach(function(x){if(x.n===w.name){if(etype(e)==="G")sg+=x.s.length;else sm+=x.s.length;days[e.date]=1}})});S.notes.forEach(function(x){if(x.wid===w.id&&x.date.slice(0,7)===month)a+=x.advance});if(sg||sm||a){var p=sg*w.wg+sm*w.wm;g+=p;ga+=a;r.push({n:w.name,d:Object.keys(days).length,sg:sg,sm:sm,wg:w.wg,wm:w.wm,p:p,a:a})}});return{r:r,g:g,ga:ga}}
 function brk(x,sep){var a=[];if(x.sg)a.push("🏭 "+x.sg+" × "+inr(x.wg));if(x.sm)a.push("🏛️ "+x.sm+" × "+inr(x.wm));return a.join(sep)}
 function vSal(){
- var R=report(),h=top("Salary","Monthly payroll report",1)+'<div class="stats"><div class="stat"><b>'+inr(R.g-R.ga)+'</b><span>BALANCE</span></div><div class="stat"><b>'+inr(R.g)+'</b><span>SALARY</span></div><div class="stat"><b>'+inr(R.ga)+'</b><span>ADVANCE</span></div></div><div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div><div class="card">';
+ var R=report(),h=hdr("Salary","Monthly payroll report",1)+'<div class="stats"><div class="stat"><b>'+inr(R.g-R.ga)+'</b><span>BALANCE</span></div><div class="stat"><b>'+inr(R.g)+'</b><span>SALARY</span></div><div class="stat"><b>'+inr(R.ga)+'</b><span>ADVANCE</span></div></div><div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div><div class="card">';
  h+=R.r.length?R.r.map(function(x){return '<div class="wrow">'+av(x.n)+'<div class="nm"><b>'+esc(x.n)+'</b><small>'+x.d+' days · '+brk(x," · ")+'</small></div><div class="r">'+inr(x.p-x.a)+(x.a?'<small style="display:block;font-weight:400;color:var(--mut)">'+inr(x.p)+' − '+inr(x.a)+'</small>':'')+'</div></div>'}).join("")+'<button class="btn" style="margin-top:14px" onclick="send(repText())">Share report</button>':'<div class="empty">No attendance this month</div>';
  return h+'</div>'}
 function repText(){var R=report();return "Salary report "+month.split("-").reverse().join("/")+"\n\n"+R.r.map(function(x){return "• "+x.n+": "+brk(x," + ").replace(/[🏭🏛️] /g,"")+" = "+inr(x.p)+(x.a?" − advance "+inr(x.a)+" = "+inr(x.p-x.a):"")}).join("\n")+"\n\nTotal salary: "+inr(R.g)+"\nAdvance: "+inr(R.ga)+"\nBalance to pay: "+inr(R.g-R.ga)}
@@ -152,7 +152,7 @@ function staff(){return user&&(user.app_metadata||{}).role==="staff"}
 function afterAuth(s){user=s?s.user:null;render();if(staff())load()}
 function login(){var e=document.getElementById("le").value.trim(),p=document.getElementById("lp").value;loginMsg="";sb.auth.signInWithPassword({email:e,password:p}).then(function(r){if(r.error){loginMsg=r.error.message;render();return}afterAuth(r.data.session)})}
 function logout(){sb.auth.signOut().then(function(){user=null;S={entries:[],workers:[],notes:[]};ready=0;render()})}
-function loginHTML(){var h=top("Attendance","Sign in to continue");
+function loginHTML(){var h=hdr("Attendance","Sign in to continue");
  if(user)return h+'<div class="card"><h2>Account not approved yet</h2><p style="color:var(--mut)">Signed in as '+esc(user.email)+'. Ask the owner to approve this account.</p><button class="btn g" onclick="logout()">Log out</button></div>';
  return h+'<div class="card"><label>Email</label><input id="le" type="email" autocomplete="username" placeholder="you@example.com"><label>Password</label><input id="lp" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key===\'Enter\')login()">'+(loginMsg?'<p style="color:var(--bad);margin:0 0 12px">'+esc(loginMsg)+'</p>':'')+'<button class="btn" onclick="login()">Sign in</button></div>'}
 function startDb(){if(!window.supabase){dbErr=1;render();return}
