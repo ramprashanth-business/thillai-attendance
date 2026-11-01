@@ -87,6 +87,7 @@ em{font-style:normal;font-size:11px;font-weight:700;color:var(--ac);background:v
 .plus.on{background:var(--ok);color:#fff}
 .sheet.tall{max-height:86vh;display:flex;flex-direction:column}.plist{overflow:auto;flex:1;margin-bottom:12px}
 .st{cursor:pointer}
+.exportrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.mutedline{font-size:12px;color:var(--mut);margin:4px 0 0}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.kpis div{background:var(--chip);border-radius:14px;padding:10px}.kpis b{display:block;font-size:15px}.kpis span{font-size:10px;color:var(--mut)}
 </style></head><body>
 <div id="app"></div><nav class="bn" id="tabs"></nav><div id="md"></div><div class="toast" id="toast"></div>
 <script>
@@ -122,6 +123,10 @@ function notesHTML(d){return S.notes.filter(function(x){return x.date===d&&(x.ad
 function nTxt(d){var l=S.notes.filter(function(x){return x.date===d&&(x.advance||x.note)});return l.length?"\n\nNotes:\n"+l.map(function(x){return "• "+x.name+(x.advance?": "+inr(x.advance)+" given":"")+(x.note?" – "+x.note:"")}).join("\n"):""}
 function dayText(d){var l=ents(d);return "Attendance "+fmt(d)+"\n\n"+l.map(function(e,i){return (i+1)+") "+ti(etype(e))+" – "+e.venue+"\n"+e.workers.map(function(w){return "• "+w.n+" "+pl(w.p||etype(e))+" – "+wdesc(w)+" = "+inr(wpay(e,w))}).join("\n")}).join("\n\n")+nTxt(d)+"\n\nTotal: "+inr(l.reduce(function(n,e){return n+ePay(e)},0))}
 function send(t){if(navigator.share){navigator.share({text:t}).catch(function(){})}else{try{navigator.clipboard.writeText(t);toast("Copied")}catch(e){prompt("Copy:",t)}}}
+function csvCell(v){var x=String(v==null?"":v);return '"'+x.replace(/"/g,'""')+'"'}
+function downloadCSV(name,rows){if(!rows.length){toast("No data to export");return}var csv='\ufeff'+rows.map(function(r){return r.map(csvCell).join(",")}).join("\r\n"),blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.style.display="none";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("CSV downloaded")}
+function exportSalary(){var rows=[["Month","Worker","Role","Days","Hours","Gross salary (INR)","Advance (INR)","Net payable (INR)","Notes"]];S.workers.forEach(function(w){var s=wstat(w,month);if(!s.rows.length&&!s.nts.length)return;var adv=s.nts.reduce(function(n,x){return n+(Number(x.advance)||0)},0),notes=s.nts.map(function(x){return x.date+": "+(x.note||"")}).filter(Boolean).join(" | ");rows.push([month,w.name,w.role||"",fd(s.days),fd(s.hrs),s.pay,adv,s.pay-adv,notes])});downloadCSV("salary-"+month+".csv",rows)}
+function exportAttendance(){var rows=[["Date","Worker","Role","Venue","Place","Shift","Hours","Rate salary (INR)","Advance (INR)","Note"]];S.entries.filter(function(e){return e.date.slice(0,7)===month}).forEach(function(e){e.workers.forEach(function(x){var w=wk(x.n),n=w?nt(e.date,w.id):{advance:0,note:""};rows.push([e.date,x.n,w?w.role:"",e.venue,x.p||etype(e),x.h>0?"Hourly":lbl(x.s),x.h||"",wpay(e,x),n.advance||0,n.note||""])})});downloadCSV("attendance-"+month+".csv",rows)}
 function openM(h,c){document.getElementById("md").innerHTML='<div class="ov" onclick="closeM()"></div><div class="sheet'+(c?' '+c:'')+'">'+h+'</div>'}
 function closeM(){document.getElementById("md").innerHTML="";if(tab==="add")render()}
 function confirmM(msg,label,fn){CB=fn;openM('<h2>'+esc(msg)+'</h2><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn red" onclick="var c=CB;closeM();c()">'+label+'</button></div>')}
@@ -200,7 +205,7 @@ function del(id){confirmM("Delete this attendance entry?","Delete",function(){ru
 
 /* ---------- HISTORY ---------- */
 function vHist(){
- var h=hdr("History","All attendance by date")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
+ var h=hdr("History","All attendance by date")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()"><div class="exportrow"><button class="pill" onclick="exportAttendance()">⬇️ Export attendance CSV</button><button class="pill" onclick="exportSalary()">⬇️ Export salary CSV</button></div></div>';
  var ds=[];S.entries.concat(S.notes).forEach(function(e){if(e.date.slice(0,7)===month&&ds.indexOf(e.date)<0)ds.push(e.date)});ds.sort().reverse();
  if(!ds.length)return h+'<div class="empty">No entries this month</div>';
  return h+ds.map(function(d){return '<div class="card"><div class="ch"><h2>📅 '+sd(d)+'</h2><button class="pill" onclick="send(dayText(\''+d+'\'))">Share</button></div>'+ents(d).map(function(e){return entryHTML(e,1)}).join("")+notesHTML(d)+'</div>'}).join("")}
@@ -230,15 +235,17 @@ function vSal(){
  if(wdet)return vWdet();
  var rows=salRows(),tp=0,tm=0;rows.forEach(function(x){tp+=x.s.pay;x.s.nts.forEach(function(n){tm+=n.advance})});
  var h=hdr("Salary","Tap a worker for day-wise salary")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()"><input type="search" placeholder="🔍 Search worker" value="'+esc(sq)+'" oninput="setSq(this.value)" style="margin:0"></div>';
- h+='<div class="hero"><span>'+ml(month)+' · total salary</span><b>'+inr(tp)+'</b><div class="hs" style="grid-template-columns:1fr 1fr"><div><b>'+rows.length+'</b><span>Workers</span></div><div><b>'+inr(tm)+'</b><span>Money noted</span></div></div></div>';
- h+='<div class="card"><div class="ch"><h2>Workers</h2>'+(rows.length?'<button class="pill" onclick="send(repAll())">Share all</button>':'')+'</div><div id="sl">'+salList()+'</div></div>';
+ var adv=tm,net=tp-adv;
+ h+='<div class="hero"><span>'+ml(month)+' · gross salary</span><b>'+inr(tp)+'</b><div class="hs" style="grid-template-columns:1fr 1fr"><div><b>'+rows.length+'</b><span>Workers</span></div><div><b>'+inr(adv)+'</b><span>Advances</span></div></div><div class="kpis"><div><b>'+inr(net)+'</b><span>NET PAYABLE</span></div><div><b>'+inr(tp)+'</b><span>GROSS</span></div><div><b>'+inr(adv)+'</b><span>ADVANCE</span></div></div></div>';
+ h+='<div class="card"><div class="ch"><h2>Workers</h2>'+(rows.length?'<button class="pill" onclick="send(repAll())">Share all</button>':'')+'</div><div class="exportrow"><button class="pill" onclick="exportSalary()">⬇️ Salary CSV</button><button class="pill" onclick="exportAttendance()">⬇️ Attendance CSV</button></div><p class="mutedline">Net payable = earned salary − recorded advances. Verify advances before payment.</p><div id="sl">'+salList()+'</div></div>';
  return h}
 function repAll(){var r=salRows(),t="Salary – "+ml(month)+"\n\n",g=0;r.forEach(function(x){g+=x.s.pay;t+="• "+x.w.name+": "+subT(x.s)+" = "+inr(x.s.pay)+"\n"});return t+"\nTotal: "+inr(g)}
 function vWdet(){
  var w=S.workers.filter(function(x){return x.id===wdet})[0];if(!w){wdet=null;return vSal()}
  var s=wstat(w,month),g=[];s.rows.forEach(function(r){var l=g[g.length-1];if(l&&l.date===r.date){l.a+=r.a;l.items.push(r)}else g.push({date:r.date,a:r.a,items:[r]})});
  var h='<div class="ab"><button class="back" onclick="wdet=null;render()">‹</button><div><h1>'+esc(w.name)+'</h1><p>'+(w.role?esc(w.role)+' · ':'')+ml(month)+'</p></div></div><div class="card"><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
- h+='<div class="hero"><span>Total salary</span><b>'+inr(s.pay)+'</b><div class="hs"><div><b>'+fd(s.days)+'</b><span>Days worked</span></div><div><b>'+fd(s.hrs)+'</b><span>Hours</span></div><div><b>'+g.length+'</b><span>Dates</span></div></div></div>';
+ var wa=s.nts.reduce(function(n,x){return n+(Number(x.advance)||0)},0);
+ h+='<div class="hero"><span>Gross salary</span><b>'+inr(s.pay)+'</b><div class="hs"><div><b>'+fd(s.days)+'</b><span>Days worked</span></div><div><b>'+fd(s.hrs)+'</b><span>Hours</span></div><div><b>'+g.length+'</b><span>Dates</span></div></div><div class="kpis"><div><b>'+inr(wa)+'</b><span>ADVANCE</span></div><div><b>'+inr(s.pay-wa)+'</b><span>NET PAYABLE</span></div><div><b>'+inr(s.pay)+'</b><span>GROSS</span></div></div></div>';
  h+='<div class="card"><h2>📅 Day-wise salary</h2>'+(g.length?g.map(function(x){return '<div class="dr"><div class="dh"><span>'+sd(x.date)+'</span><span>'+inr(x.a)+'</span></div>'+x.items.map(function(r){return '<p>'+pl(r.p)+' '+esc(r.venue)+' · '+(r.h?fd(r.h)+' h':lbl(r.s))+'</p>'}).join("")+'</div>'}).join("")+'<div class="tr"><span>Total</span><span>'+inr(s.pay)+'</span></div>':'<div class="empty">No attendance this month</div>')+'</div>';
  h+='<div class="card"><h2>💸 Money given (note only)</h2>'+(s.nts.length?s.nts.map(function(x){return '<div class="dr"><div class="dh"><span>'+sd(x.date)+'</span><span>'+(x.advance?inr(x.advance):'')+'</span></div>'+(x.note?'<p>'+esc(x.note)+'</p>':'')+'</div>'}).join(""):'<div class="empty">No notes this month</div>')+'</div>';
  return h+'<button class="btn" onclick="send(wText())">Share statement</button>'}
