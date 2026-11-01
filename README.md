@@ -15,3 +15,12 @@ Single `index.html` + Supabase (project `epvyxduwyuptuumfzjjn`).
 4. Sign in on the site.
 
 Only users with role `staff` can read or write data (row level security). The publishable key in `index.html` is safe to be public.
+
+
+## Upgrade existing Supabase database
+If this project is already running, open Supabase SQL Editor and run `supabase/migration_2026_11.sql`. It adds the worker role/hourly-rate columns used by the app and permits combined Godown + Mahal attendance (`GM`). It does not delete existing records.
+
+## New reporting features
+- Export the selected month's attendance detail to CSV from History or Salary.
+- Export monthly gross salary, recorded advances and net payable to CSV.
+- Salary screens now show gross, advances and estimated net payable separately. Net payable is a calculation only; confirm each advance and payment with the worker before settling wages.
