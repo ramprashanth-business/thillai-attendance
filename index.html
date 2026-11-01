@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Attendance">
+<title>Attendance &amp; Salary</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f4f3fa;--card:#fff;--tx:#14121f;--mut:#8b8a99;--ac:#7c3aed;--ac2:#ec4899;--line:#ecebf3;--chip:#f0eff7;--bad:#e11d48;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0a12;--card:#1a1826;--tx:#f5f4fb;--mut:#9a98aa;--line:#2a2838;--chip:#26243a}}
+:root[data-theme="dark"]{--bg:#0b0a12;--card:#1a1826;--tx:#f5f4fb;--mut:#9a98aa;--line:#2a2838;--chip:#26243a}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:linear-gradient(#7c3aed,#7c3aed) top/100% env(safe-area-inset-top,0px) no-repeat var(--bg)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;padding:0 16px 160px}
+.top{margin:0 -16px 14px;padding:24px 20px 28px;background:linear-gradient(180deg,#7c3aed 0%,#9b3df0 60%,#c13cd0 100%);color:#fff;border-radius:0 0 30px 30px}
+.top.t{padding-bottom:60px}.top h1{margin:0;font-size:30px;letter-spacing:-.6px}.top p{margin:4px 0 0;opacity:.88;font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:-48px 0 14px}
+.stat{background:var(--card);border-radius:20px;padding:12px 6px;box-shadow:0 8px 20px rgba(80,40,160,.14);text-align:center}
+.stat b{display:block;font-size:19px}.stat span{font-size:10px;color:var(--mut);font-weight:700;letter-spacing:.4px}
+.card{background:var(--card);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(80,40,160,.07);animation:in .3s}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+.card h2,.sheet h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px}
+input{width:100%;font:inherit;color:var(--tx);background:var(--chip);border:0;border-radius:14px;padding:14px;outline:none;margin-bottom:14px;min-width:0}
+input:focus{box-shadow:0 0 0 2px var(--ac)}
+.seg{display:flex;background:var(--chip);border-radius:16px;padding:4px;margin-bottom:14px}
+.seg button{flex:1;border:0;background:none;font:inherit;font-weight:700;padding:11px 6px;border-radius:12px;color:var(--mut)}
+.seg button.on{background:var(--card);color:var(--ac);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 14px}
+.chip{border:0;background:var(--chip);color:var(--tx);font:inherit;font-size:14px;padding:8px 14px;border-radius:999px}
+.row{display:flex;gap:8px;margin-bottom:14px}.row input{margin-bottom:0}
+.btn{border:0;font:inherit;font-weight:700;border-radius:16px;padding:15px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;width:100%;font-size:16px}
+.btn.g{background:var(--chip);color:var(--tx)}.btn.red{background:var(--bad)}
+.wk{display:flex;align-items:center;gap:10px;padding:10px;border-radius:20px;background:var(--chip);margin-bottom:8px;border:2px solid transparent;transition:.15s}
+.wk.on{border-color:var(--ac)}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;flex:none}
+.nm{flex:1;min-width:0}.nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nm small{color:var(--mut);font-size:12px}
+.sh{border:0;background:var(--card);color:var(--mut);font:inherit;font-size:11px;font-weight:700;width:64px;padding:6px 0;border-radius:14px;display:flex;flex-direction:column;align-items:center}
+.sh i{font-style:normal;font-size:20px}.sh.on{background:var(--ac);color:#fff}
+.ent{border-top:1px solid var(--line);padding:14px 0}.ent:first-of-type{border-top:0;padding-top:0}
+.eh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.tp{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fef3c7;color:#b45309}.tp.M{background:#ede9fe;color:#6d28d9}
+.badge{font-weight:800;color:var(--ac)}
+.ent h3{margin:0 0 6px;font-size:17px}
+.ent p{margin:3px 0;color:var(--mut);font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.acts{display:flex;gap:8px;margin-top:10px}
+.pill{border:0;background:var(--chip);color:var(--ac);font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px}.pill.d{color:var(--bad)}
+.empty{text-align:center;color:var(--mut);padding:22px 0}
+.day{font-weight:800;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.wrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}.wrow:first-of-type{border-top:0}
+.wrow .r{text-align:right;font-weight:800}
+.edit{background:#fef3c7;color:#92400e;display:flex;justify-content:space-between;align-items:center}
+.fab{position:fixed;left:16px;right:16px;bottom:calc(78px + env(safe-area-inset-bottom,0px));box-shadow:0 10px 26px rgba(124,58,237,.45);z-index:5}
+.fab.off{background:var(--mut);box-shadow:none}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));z-index:6}
+.tabs button{flex:1;border:0;background:none;color:var(--mut);font:inherit;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs button i{font-style:normal;font-size:22px}.tabs button.on{color:var(--ac)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:28px 28px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom,0px));z-index:21;animation:up .25s}
+@keyframes up{from{transform:translateY(100%)}}
+.r2{display:flex;gap:10px}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:30}.toast.show{opacity:1}
+</style></head><body>
+<div id="app"></div><nav class="tabs" id="tabs"></nav><div id="md"></div><div class="toast" id="toast"></div>
+<script>
+var KEY="attendance_v1",S={entries:[],workers:[],notes:[]},db=null,ready=0,dbErr=0,legacy=null,tab="entry",date=today(),month=today().slice(0,7),f={id:null,t:"M",venue:"",sel:{}},sb=null,user=null,loginMsg="",CB=null,COL=["#7c3aed","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444"];
+function today(){var d=new Date(),p=function(n){return String(n).padStart(2,"0")};return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
+function fmt(d){var a=d.split("-");return a[2]+"/"+a[1]+"/"+a[0]}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function inr(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function toast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1800)}
+function run(p,msg){return p.then(function(r){if(r.error){toast(r.error.message);return}toast(msg);return load()})}
+function col(n){var c=0;for(var i=0;i<n.length;i++)c+=n.charCodeAt(i);return COL[c%COL.length]}
+function av(n){return '<div class="av" style="background:'+col(n)+'">'+esc(n.charAt(0).toUpperCase())+'</div>'}
+function wk(n){return S.workers.filter(function(x){return x.name===n})[0]}
+function rate(n,t){var w=wk(n);return w?(t==="G"?w.wg:w.wm):0}
+function etype(e){return e.t||(/godown/i.test(e.venue)?"G":"M")}
+function ti(t){return t==="G"?"🏭 Godown":"🏛️ Mandapam"}
+function lbl(s){return s.map(function(k){return k==="M"?"☀️ Morning":"🌙 Night"}).join(" + ")}
+function ents(d){return S.entries.filter(function(e){return e.date===d})}
+function ePay(e){var t=etype(e);return e.workers.reduce(function(n,w){return n+rate(w.n,t)*w.s.length},0)}
+function eSh(e){return e.workers.reduce(function(n,w){return n+w.s.length},0)}
+function nt(d,wid){return S.notes.filter(function(x){return x.date===d&&x.wid===wid})[0]||{advance:0,note:""}}
+function notesHTML(d){return S.notes.filter(function(x){return x.date===d}).map(function(x){return '<div class="ent"><p><span>💬 '+esc(x.name)+(x.note?' · '+esc(x.note):'')+'</span><span>'+(x.advance?'− '+inr(x.advance):'')+'</span></p></div>'}).join("")}
+function nTxt(d){var l=S.notes.filter(function(x){return x.date===d});return l.length?"\n\nNotes:\n"+l.map(function(x){return "• "+x.name+(x.advance?": advance "+inr(x.advance):"")+(x.note?" – "+x.note:"")}).join("\n"):""}
+function dayText(d){var l=ents(d);return "Attendance "+fmt(d)+"\n\n"+l.map(function(e,i){return (i+1)+") "+ti(etype(e))+" – "+e.venue+"\n"+e.workers.map(function(w){return "• "+w.n+" – "+lbl(w.s)+" = "+inr(rate(w.n,etype(e))*w.s.length)}).join("\n")}).join("\n\n")+nTxt(d)+"\n\nTotal: "+inr(l.reduce(function(n,e){return n+ePay(e)},0))}
+function send(t){if(navigator.share){navigator.share({text:t}).catch(function(){})}else{try{navigator.clipboard.writeText(t);toast("Copied")}catch(e){prompt("Copy:",t)}}}
+function openM(h){document.getElementById("md").innerHTML='<div class="ov" onclick="closeM()"></div><div class="sheet">'+h+'</div>'}
+function closeM(){document.getElementById("md").innerHTML=""}
+function confirmM(msg,label,fn){CB=fn;openM('<h2>'+esc(msg)+'</h2><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn red" onclick="var c=CB;closeM();c()">'+label+'</button></div>')}
+function top(t,s,big){return '<div class="top'+(big?' t':'')+'"><h1>'+t+'</h1><p>'+s+'</p></div>'}
+function status(){return dbErr?'⚠️ Cannot reach database':ready<7?'⏳ Loading data…':'☁️ Synced with database'}
+function entryHTML(e,acts){var t=etype(e);return '<div class="ent"><div class="eh"><span class="tp '+t+'">'+ti(t)+'</span><span class="badge">'+inr(ePay(e))+'</span></div><h3>'+esc(e.venue)+'</h3>'+e.workers.map(function(w){return '<p><span>'+esc(w.n)+' · '+lbl(w.s)+'</span><span>'+inr(rate(w.n,t)*w.s.length)+'</span></p>'}).join("")+(acts?'<div class="acts"><button class="pill" onclick="edit(\''+e.id+'\')">✏️ Edit</button><button class="pill d" onclick="del(\''+e.id+'\')">🗑️ Delete</button></div>':'')+'</div>'}
+function vEntry(){
+ var l=ents(date),sh=0,pay=0,cs=0,cp=0,ks=Object.keys(f.sel);l.forEach(function(e){sh+=eSh(e);pay+=ePay(e)});ks.forEach(function(n){cs+=f.sel[n].length;cp+=f.sel[n].length*rate(n,f.t)});
+ var h=top("Attendance",status(),1)+'<div class="stats"><div class="stat"><b>'+l.length+'</b><span>EVENTS</span></div><div class="stat"><b>'+sh+'</b><span>SHIFTS</span></div><div class="stat"><b>'+inr(pay)+'</b><span>DAY SALARY</span></div></div>';
+ if(f.id)h+='<div class="card edit"><b>✏️ Editing an entry</b><button class="pill" onclick="cancelE()">Cancel</button></div>';
+ h+='<div class="card" id="form"><label>Date</label><input type="date" value="'+date+'" onchange="date=this.value;render()"><label>Work type</label><div class="seg"><button class="'+(f.t==="G"?'on':'')+'" onclick="setT(\'G\')">🏭 Godown</button><button class="'+(f.t==="M"?'on':'')+'" onclick="setT(\'M\')">🏛️ Mandapam</button></div>';
+ h+='<label>'+(f.t==="G"?'Godown name (optional)':'Mandapam / hall name')+'</label><input placeholder="'+(f.t==="G"?'Godown':'e.g. Sri Mahal')+'" value="'+esc(f.venue)+'" oninput="f.venue=this.value">';
+ var vs=[];S.entries.forEach(function(e){if(etype(e)===f.t&&vs.indexOf(e.venue)<0)vs.push(e.venue)});
+ if(vs.length)h+='<div class="chips">'+vs.map(function(v){return '<button class="chip" data-v="'+esc(v)+'" onclick="f.venue=this.dataset.v;render()">'+esc(v)+'</button>'}).join("")+'</div>';
+ h+='<label>Workers – tap Morning / Night</label>';
+ if(!S.workers.length)h+='<div class="empty">No workers yet.<br><button class="pill" onclick="tab=\'work\';render()">Add workers first →</button></div>';
+ S.workers.forEach(function(w,i){var s=f.sel[w.name]||[],r=f.t==="G"?w.wg:w.wm;h+='<div class="wk'+(s.length?' on':'')+'">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+'</b><small>'+inr(r)+' / day'+(s.length?' · '+inr(r*s.length):'')+'</small></div><button class="sh'+(s.indexOf("M")>-1?' on':'')+'" onclick="sh('+i+',\'M\')"><i>☀️</i>Morning</button><button class="sh'+(s.indexOf("N")>-1?' on':'')+'" onclick="sh('+i+',\'N\')"><i>🌙</i>Night</button></div>'});
+ h+='</div>';
+ if(S.workers.length)h+='<div class="card"><h2>💬 Notes &amp; money taken</h2><label>'+fmt(date)+'</label>'+S.workers.map(function(w,i){var n=nt(date,w.id);return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+av(w.name)+'<b>'+esc(w.name)+'</b></div><div class="row"><input id="na'+i+'" type="number" inputmode="numeric" placeholder="Money ₹" value="'+(n.advance||'')+'" style="max-width:110px" onchange="saveN('+i+')"><input id="nn'+i+'" placeholder="Note (e.g. took money)" value="'+esc(n.note)+'" onchange="saveN('+i+')"></div>'}).join("")+'</div>';
+ h+='<div class="card"><div class="day"><span>📅 '+fmt(date)+'</span>'+(l.length?'<button class="pill" onclick="send(dayText(date))">Share</button>':'')+'</div>'+(l.length?l.map(function(e){return entryHTML(e,1)}).join(""):'<div class="empty">No entries for this date</div>')+'</div>';
+ h+='<button class="btn fab'+(cs?'':' off')+'" onclick="saveE()">'+(cs?(f.id?'Update':'Save')+' entry · '+ks.length+' workers · '+inr(cp):'Select workers to save')+'</button>';
+ return h}
+function vHist(){
+ var h=top("History","All entries by date")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
+ var ds=[];S.entries.concat(S.notes).forEach(function(e){if(e.date.slice(0,7)===month&&ds.indexOf(e.date)<0)ds.push(e.date)});ds.sort().reverse();
+ if(!ds.length)return h+'<div class="empty">No entries this month</div>';
+ return h+ds.map(function(d){return '<div class="card"><div class="day"><span>📅 '+fmt(d)+'</span><button class="pill" onclick="send(dayText(\''+d+'\'))">Share</button></div>'+ents(d).map(function(e){return entryHTML(e,0)}).join("")+notesHTML(d)+'</div>'}).join("")}
+function vWork(){
+ var h=top("Workers","Add your team &amp; daily salary")+'<div class="card"><h2>➕ New worker</h2><label>Name</label><input id="nw" placeholder="Worker name"><label>🏭 Godown salary / day (₹)</label><input id="ng" type="number" inputmode="numeric" placeholder="e.g. 500"><label>🏛️ Mandapam salary / day (₹)</label><input id="nm" type="number" inputmode="numeric" placeholder="e.g. 800"><button class="btn" onclick="addW()">Add worker</button></div><div class="card"><h2>Team ('+S.workers.length+')</h2>';
+ h+=S.workers.length?S.workers.map(function(w,i){return '<div class="wrow">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+'</b><small>🏭 '+inr(w.wg)+' · 🏛️ '+inr(w.wm)+'</small></div><button class="pill" onclick="editW('+i+')">Edit</button><button class="pill d" onclick="delW('+i+')">Remove</button></div>'}).join(""):'<div class="empty">No workers yet</div>';
+ return h+'</div><button class="btn g" onclick="logout()">Log out</button>'}
+function report(){var r=[],g=0,ga=0;S.workers.forEach(function(w){var days={},sg=0,sm=0,a=0;S.entries.forEach(function(e){if(e.date.slice(0,7)!==month)return;e.workers.forEach(function(x){if(x.n===w.name){if(etype(e)==="G")sg+=x.s.length;else sm+=x.s.length;days[e.date]=1}})});S.notes.forEach(function(x){if(x.wid===w.id&&x.date.slice(0,7)===month)a+=x.advance});if(sg||sm||a){var p=sg*w.wg+sm*w.wm;g+=p;ga+=a;r.push({n:w.name,d:Object.keys(days).length,sg:sg,sm:sm,wg:w.wg,wm:w.wm,p:p,a:a})}});return{r:r,g:g,ga:ga}}
+function brk(x,sep){var a=[];if(x.sg)a.push("🏭 "+x.sg+" × "+inr(x.wg));if(x.sm)a.push("🏛️ "+x.sm+" × "+inr(x.wm));return a.join(sep)}
+function vSal(){
+ var R=report(),h=top("Salary","Monthly payroll report",1)+'<div class="stats"><div class="stat"><b>'+inr(R.g-R.ga)+'</b><span>BALANCE</span></div><div class="stat"><b>'+inr(R.g)+'</b><span>SALARY</span></div><div class="stat"><b>'+inr(R.ga)+'</b><span>ADVANCE</span></div></div><div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div><div class="card">';
+ h+=R.r.length?R.r.map(function(x){return '<div class="wrow">'+av(x.n)+'<div class="nm"><b>'+esc(x.n)+'</b><small>'+x.d+' days · '+brk(x," · ")+'</small></div><div class="r">'+inr(x.p-x.a)+(x.a?'<small style="display:block;font-weight:400;color:var(--mut)">'+inr(x.p)+' − '+inr(x.a)+'</small>':'')+'</div></div>'}).join("")+'<button class="btn" style="margin-top:14px" onclick="send(repText())">Share report</button>':'<div class="empty">No attendance this month</div>';
+ return h+'</div>'}
+function repText(){var R=report();return "Salary report "+month.split("-").reverse().join("/")+"\n\n"+R.r.map(function(x){return "• "+x.n+": "+brk(x," + ").replace(/[🏭🏛️] /g,"")+" = "+inr(x.p)+(x.a?" − advance "+inr(x.a)+" = "+inr(x.p-x.a):"")}).join("\n")+"\n\nTotal salary: "+inr(R.g)+"\nAdvance: "+inr(R.ga)+"\nBalance to pay: "+inr(R.g-R.ga)}
+function render(){
+ if(!staff()){document.getElementById("app").innerHTML=loginHTML();document.getElementById("tabs").innerHTML="";return}
+ document.getElementById("app").innerHTML={entry:vEntry,hist:vHist,work:vWork,sal:vSal}[tab]();
+ var T=[["entry","✍️","Entry"],["hist","🗓️","History"],["work","👷","Workers"],["sal","💰","Salary"]];
+ document.getElementById("tabs").innerHTML=T.map(function(t){return '<button class="'+(tab===t[0]?'on':'')+'" onclick="tab=\''+t[0]+'\';render();scrollTo(0,0)"><i>'+t[1]+'</i>'+t[2]+'</button>'}).join("")}
+function setT(t){f.t=t;f.venue="";render()}
+function sh(i,k){var n=S.workers[i].name,s=(f.sel[n]||[]).slice(),j=s.indexOf(k);j>-1?s.splice(j,1):s.push(k);s.sort().reverse();if(s.length)f.sel[n]=s;else delete f.sel[n];render()}
+function addW(){var n=document.getElementById("nw").value.trim(),g=Number(document.getElementById("ng").value)||0,m=Number(document.getElementById("nm").value)||0;if(!n){toast("Enter name");return}run(sb.from("workers").upsert({name:n,wg:g,wm:m},{onConflict:"name"}),"Saved ✓")}
+function editW(i){var w=S.workers[i];openM('<h2>Edit '+esc(w.name)+'</h2><label>🏭 Godown salary / day (₹)</label><input id="e1" type="number" inputmode="numeric" value="'+w.wg+'"><label>🏛️ Mandapam salary / day (₹)</label><input id="e2" type="number" inputmode="numeric" value="'+w.wm+'"><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveW('+i+')">Save</button></div>')}
+function saveW(i){var w=S.workers[i],a=Number(document.getElementById("e1").value)||0,b=Number(document.getElementById("e2").value)||0;closeM();run(sb.from("workers").update({wg:a,wm:b}).eq("id",w.id),"Updated ✓")}
+function delW(i){var w=S.workers[i];confirmM("Remove "+w.name+"? Their past entries stay, notes are deleted.","Remove",function(){run(sb.from("workers").delete().eq("id",w.id),"Removed")})}
+function saveE(){var v=f.venue.trim()||(f.t==="G"?"Godown":""),ks=Object.keys(f.sel);if(!v){toast("Enter mandapam name");return}if(!ks.length)return;
+ var ws=ks.map(function(n){return{n:n,s:f.sel[n]}}),id=f.id,t=f.t,row={date:date,t:t,venue:v,workers:ws};f={id:null,t:t,venue:"",sel:{}};
+ run(id?sb.from("entries").update(row).eq("id",id):sb.from("entries").insert(row),"Saved ✓")}
+function cancelE(){f={id:null,t:f.t,venue:"",sel:{}};render()}
+function edit(id){S.entries.forEach(function(e){if(e.id===id){f={id:id,t:etype(e),venue:e.venue,sel:{}};e.workers.forEach(function(w){f.sel[w.n]=w.s.slice()});date=e.date}});render();try{document.getElementById("form").scrollIntoView({behavior:"smooth"})}catch(x){scrollTo(0,0)}}
+function del(id){confirmM("Delete this entry?","Delete",function(){run(sb.from("entries").delete().eq("id",id),"Deleted")})}
+function saveN(i){var w=S.workers[i];if(!w)return;var a=Number(document.getElementById("na"+i).value)||0,t=document.getElementById("nn"+i).value.trim();
+ run(a||t?sb.from("notes").upsert({date:date,worker_id:w.id,name:w.name,advance:a,note:t},{onConflict:"date,worker_id"}):sb.from("notes").delete().eq("date",date).eq("worker_id",w.id),"Note saved ✓")}
+
+function load(){Promise.all([sb.from("workers").select("*"),sb.from("entries").select("*"),sb.from("notes").select("*")]).then(function(r){var bad=r.filter(function(x){return x.error})[0];if(bad){dbErr=1;toast(bad.error.message);render();return}dbErr=0;
+ S.workers=r[0].data.map(function(o){return{id:o.id,name:o.name,wg:Number(o.wg),wm:Number(o.wm)}}).sort(function(a,b){return a.name.localeCompare(b.name)});
+ S.entries=r[1].data.map(function(o){return{id:o.id,date:o.date,t:o.t,venue:o.venue,workers:o.workers||[]}}).sort(function(a,b){return a.date<b.date?-1:1});
+ S.notes=r[2].data.map(function(o){return{id:o.id,date:o.date,wid:o.worker_id,name:o.name,advance:Number(o.advance),note:o.note||""}});ready=7;render()})}
+function staff(){return user&&(user.app_metadata||{}).role==="staff"}
+function afterAuth(s){user=s?s.user:null;render();if(staff())load()}
+function login(){var e=document.getElementById("le").value.trim(),p=document.getElementById("lp").value;loginMsg="";sb.auth.signInWithPassword({email:e,password:p}).then(function(r){if(r.error){loginMsg=r.error.message;render();return}afterAuth(r.data.session)})}
+function logout(){sb.auth.signOut().then(function(){user=null;S={entries:[],workers:[],notes:[]};ready=0;render()})}
+function loginHTML(){var h=top("Attendance","Sign in to continue");
+ if(user)return h+'<div class="card"><h2>Account not approved yet</h2><p style="color:var(--mut)">Signed in as '+esc(user.email)+'. Ask the owner to approve this account.</p><button class="btn g" onclick="logout()">Log out</button></div>';
+ return h+'<div class="card"><label>Email</label><input id="le" type="email" autocomplete="username" placeholder="you@example.com"><label>Password</label><input id="lp" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key===\'Enter\')login()">'+(loginMsg?'<p style="color:var(--bad);margin:0 0 12px">'+esc(loginMsg)+'</p>':'')+'<button class="btn" onclick="login()">Sign in</button></div>'}
+function startDb(){if(!window.supabase){dbErr=1;render();return}
+ sb=supabase.createClient("https://epvyxduwyuptuumfzjjn.supabase.co","sb_publishable_bY8dwrTTcOPpAmxkWe_68w_eF4BDkCk");
+ sb.auth.getSession().then(function(r){afterAuth(r.data.session)});
+ document.addEventListener("visibilitychange",function(){if(!document.hidden&&staff())load()})}
+render();startDb();
+</script></body></html>
