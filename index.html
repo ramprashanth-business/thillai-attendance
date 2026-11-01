@@ -78,11 +78,20 @@ input:focus{box-shadow:0 0 0 2px var(--ac)}
 @keyframes up{from{transform:translateY(100%)}}
 .r2{display:flex;gap:10px}
 .toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:30}.toast.show{opacity:1}
+.pcs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.pc{border:2px solid var(--line);background:var(--card);color:var(--tx);font:inherit;font-size:14px;font-weight:700;border-radius:14px;padding:10px 6px;display:flex;align-items:center;justify-content:center;gap:8px}
+.pc.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 10%,var(--card));color:var(--ac)}
+.cb2{width:18px;height:18px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;color:#fff}.pc.on .cb2{background:var(--ac);border-color:var(--ac)}
+em{font-style:normal;font-size:11px;font-weight:700;color:var(--ac);background:var(--chip);padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.wk.on label{margin-top:2px}.wk.on .seg{margin-bottom:10px}.wk.on .chips{margin:-2px 0 10px}
+.plus.on{background:var(--ok);color:#fff}
+.sheet.tall{max-height:86vh;display:flex;flex-direction:column}.plist{overflow:auto;flex:1;margin-bottom:12px}
+.st{cursor:pointer}
 </style></head><body>
 <div id="app"></div><nav class="bn" id="tabs"></nav><div id="md"></div><div class="toast" id="toast"></div>
 <script>
-var S={entries:[],workers:[],notes:[]},sb=null,user=null,loginMsg="",ready=0,dbErr=0,tab="home",date=today(),month=today().slice(0,7),wdet=null,q="",CB=null,f=newF(),COL=["#7c3aed","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444"],VAL={H:.5,M:1,N:1},LB={H:"½ Day",M:"☀️ Morning",N:"🌙 Night"},KS=["H","M","N"];
-function newF(){return{id:null,g:0,m:1,hall:"",sel:{}}}
+var S={entries:[],workers:[],notes:[]},sb=null,user=null,loginMsg="",ready=0,dbErr=0,tab="home",date=today(),month=today().slice(0,7),wdet=null,q="",pq="",sq="",wq="",CB=null,f=newF(),COL=["#7c3aed","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444"],VAL={H:.5,M:1,N:1},LB={H:"½ Day",M:"☀️ Morning",N:"🌙 Night"},KS=["H","M","N"];
+function newF(){return{id:null,hall:"",sel:{}}}
 function ymd(d){var p=function(n){return String(n).padStart(2,"0")};return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
 function today(){return ymd(new Date())}
 function dt(s){return new Date(s+"T00:00:00")}
@@ -100,29 +109,32 @@ function rate(n,t){var w=wk(n);if(!w)return 0;var g=t.indexOf("G")>-1,m=t.indexO
 function etype(e){return e.t||(/godown/i.test(e.venue)?"G":"M")}
 function ti(t){return t==="GM"?"🏭 Godown + 🏛️ Mahal":t==="G"?"🏭 Godown":"🏛️ Mahal"}
 function hallOf(e){var t=etype(e);return t==="GM"?e.venue.replace(/^Godown \+ /,""):t==="M"?e.venue:""}
-function dys(s){return s.reduce(function(n,k){return n+(VAL[k]||0)},0)}
-function lbl(s){return KS.filter(function(k){return s.indexOf(k)>-1}).map(function(k){return LB[k]}).join(" + ")}
+function dys(s){return (s||[]).reduce(function(n,k){return n+(VAL[k]||0)},0)}
+function lbl(s){return KS.filter(function(k){return (s||[]).indexOf(k)>-1}).map(function(k){return LB[k]}).join(" + ")}
 function ents(d){return S.entries.filter(function(e){return e.date===d})}
-function ePay(e){var t=etype(e);return e.workers.reduce(function(n,w){return n+rate(w.n,t)*dys(w.s)},0)}
+function pl(p){return p==="GM"?"🏭🏛️":p==="G"?"🏭":"🏛️"}
+function wdesc(x){return x.h>0?fd(Number(x.h))+" h":lbl(x.s)}
+function wpay(e,x){var w=wk(x.n);if(x.h>0)return (w?w.wh:0)*x.h;return rate(x.n,x.p||etype(e))*dys(x.s)}
+function ePay(e){return e.workers.reduce(function(n,x){return n+wpay(e,x)},0)}
 function nt(d,wid){return S.notes.filter(function(x){return x.date===d&&x.wid===wid})[0]||{advance:0,note:""}}
 function nline(x){return '<div class="nt">💬 <b>'+esc(x.name)+'</b>'+(x.advance?' · '+inr(x.advance)+' given':'')+(x.note?' · '+esc(x.note):'')+'</div>'}
 function notesHTML(d){return S.notes.filter(function(x){return x.date===d&&(x.advance||x.note)}).map(nline).join("")}
 function nTxt(d){var l=S.notes.filter(function(x){return x.date===d&&(x.advance||x.note)});return l.length?"\n\nNotes:\n"+l.map(function(x){return "• "+x.name+(x.advance?": "+inr(x.advance)+" given":"")+(x.note?" – "+x.note:"")}).join("\n"):""}
-function dayText(d){var l=ents(d);return "Attendance "+fmt(d)+"\n\n"+l.map(function(e,i){return (i+1)+") "+ti(etype(e))+" – "+e.venue+"\n"+e.workers.map(function(w){return "• "+w.n+" – "+lbl(w.s)+" = "+inr(rate(w.n,etype(e))*dys(w.s))}).join("\n")}).join("\n\n")+nTxt(d)+"\n\nTotal: "+inr(l.reduce(function(n,e){return n+ePay(e)},0))}
+function dayText(d){var l=ents(d);return "Attendance "+fmt(d)+"\n\n"+l.map(function(e,i){return (i+1)+") "+ti(etype(e))+" – "+e.venue+"\n"+e.workers.map(function(w){return "• "+w.n+" "+pl(w.p||etype(e))+" – "+wdesc(w)+" = "+inr(wpay(e,w))}).join("\n")}).join("\n\n")+nTxt(d)+"\n\nTotal: "+inr(l.reduce(function(n,e){return n+ePay(e)},0))}
 function send(t){if(navigator.share){navigator.share({text:t}).catch(function(){})}else{try{navigator.clipboard.writeText(t);toast("Copied")}catch(e){prompt("Copy:",t)}}}
-function openM(h){document.getElementById("md").innerHTML='<div class="ov" onclick="closeM()"></div><div class="sheet">'+h+'</div>'}
-function closeM(){document.getElementById("md").innerHTML=""}
+function openM(h,c){document.getElementById("md").innerHTML='<div class="ov" onclick="closeM()"></div><div class="sheet'+(c?' '+c:'')+'">'+h+'</div>'}
+function closeM(){document.getElementById("md").innerHTML="";if(tab==="add")render()}
 function confirmM(msg,label,fn){CB=fn;openM('<h2>'+esc(msg)+'</h2><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn red" onclick="var c=CB;closeM();c()">'+label+'</button></div>')}
 function hdr(t,s){return '<div class="gr"><div><p>'+s+'</p><h1>'+t+'</h1></div></div>'}
 function stt(){return dbErr?'⚠️ Cannot reach database':ready<7?'⏳ Loading…':'☁️ Synced'}
-function entryHTML(e,acts){var t=etype(e);return '<div class="ent"><div class="eh"><span class="tp '+t+'">'+ti(t)+'</span><span class="badge">'+inr(ePay(e))+'</span></div><h3>'+esc(e.venue)+'</h3>'+e.workers.map(function(w){return '<p><span>'+esc(w.n)+' · '+lbl(w.s)+'</span><span>'+inr(rate(w.n,t)*dys(w.s))+'</span></p>'}).join("")+(acts?'<div class="acts"><button class="pill" onclick="edit(\''+e.id+'\')">✏️ Edit</button><button class="pill d" onclick="del(\''+e.id+'\')">🗑️ Delete</button></div>':'')+'</div>'}
-function wstat(w,m){var rows=[],days=0,pay=0;S.entries.forEach(function(e){if(e.date.slice(0,7)!==m)return;e.workers.forEach(function(x){if(x.n!==w.name)return;var d=dys(x.s),a=d*rate(w.name,etype(e));rows.push({date:e.date,venue:e.venue,s:x.s,d:d,a:a});days+=d;pay+=a})});var nts=S.notes.filter(function(x){return x.wid===w.id&&x.date.slice(0,7)===m&&(x.advance||x.note)}).sort(function(a,b){return a.date<b.date?-1:1});return{rows:rows,days:days,pay:pay,nts:nts}}
+function entryHTML(e,acts){var t=etype(e);return '<div class="ent"><div class="eh"><span class="tp '+t+'">'+ti(t)+'</span><span class="badge">'+inr(ePay(e))+'</span></div><h3>'+esc(e.venue)+'</h3>'+e.workers.map(function(w){return '<p><span>'+esc(w.n)+' '+pl(w.p||t)+' · '+wdesc(w)+'</span><span>'+inr(wpay(e,w))+'</span></p>'}).join("")+(acts?'<div class="acts"><button class="pill" onclick="edit(\''+e.id+'\')">✏️ Edit</button><button class="pill d" onclick="del(\''+e.id+'\')">🗑️ Delete</button></div>':'')+'</div>'}
+function wstat(w,m){var rows=[],days=0,hrs=0,pay=0;S.entries.forEach(function(e){if(e.date.slice(0,7)!==m)return;e.workers.forEach(function(x){if(x.n!==w.name)return;var h=x.h>0?Number(x.h):0,a=wpay(e,x);rows.push({date:e.date,venue:e.venue,s:x.s||[],h:h,p:x.p||etype(e),a:a});if(h)hrs+=h;else days+=dys(x.s);pay+=a})});var nts=S.notes.filter(function(x){return x.wid===w.id&&x.date.slice(0,7)===m&&(x.advance||x.note)}).sort(function(a,b){return a.date<b.date?-1:1});return{rows:rows,days:days,hrs:hrs,pay:pay,nts:nts}}
 /* ---------- HOME ---------- */
 function vHome(){
  var td=today(),l=ents(td),cur=td.slice(0,7),pay=0,days=0,ppl={},money=0,hr=new Date().getHours();
  S.entries.forEach(function(e){if(e.date.slice(0,7)!==cur)return;pay+=ePay(e);e.workers.forEach(function(w){days+=dys(w.s);ppl[w.n]=1})});
  S.notes.forEach(function(x){if(x.date.slice(0,7)===cur)money+=x.advance});
- var h='<div class="gr"><div><p>'+(hr<12?"Good morning":hr<17?"Good afternoon":"Good evening")+' 👋</p><h1>Dashboard</h1></div><span class="st">'+stt()+'</span></div>';
+ var h='<div class="gr"><div><p>'+(hr<12?"Good morning":hr<17?"Good afternoon":"Good evening")+' 👋</p><h1>Dashboard</h1></div><span class="st" onclick="load()">'+stt()+' ↻</span></div>';
  h+='<div class="hero"><span>'+ml(cur)+' · salary</span><b>'+inr(pay)+'</b><div class="hs"><div><b>'+fd(days)+'</b><span>Days worked</span></div><div><b>'+Object.keys(ppl).length+'</b><span>Workers</span></div><div><b>'+inr(money)+'</b><span>Money noted</span></div></div></div>';
  var arr=[],mx=1;for(var k=6;k>=0;k--){var d=new Date();d.setDate(d.getDate()-k);var p={};ents(ymd(d)).forEach(function(e){e.workers.forEach(function(w){p[w.n]=1})});var c=Object.keys(p).length;arr.push({d:d,c:c});mx=Math.max(mx,c)}
  h+='<div class="card"><div class="ch"><h2>Last 7 days</h2><span class="st">workers present</span></div><div class="bars">'+arr.map(function(a){return '<div class="bc"><span>'+(a.c||"")+'</span><i style="height:'+(a.c?Math.max(14,a.c/mx*70):5)+'px"></i>'+a.d.toLocaleDateString("en-IN",{weekday:"short"}).slice(0,2)+'</div>'}).join("")+'</div></div>';
@@ -132,46 +144,60 @@ function vHome(){
  if(top5.length)h+='<div class="card"><div class="ch"><h2>This month</h2><button class="pill" onclick="go(\'sal\')">All →</button></div>'+top5.map(function(x){return '<div class="wrow l" onclick="wdet=\''+x.w.id+'\';month=\''+cur+'\';tab=\'sal\';render();scrollTo(0,0)">'+av(x.w.name)+'<div class="nm"><b>'+esc(x.w.name)+'</b><small>'+fd(x.s.days)+' days</small></div><div class="r">'+inr(x.s.pay)+'</div></div>'}).join("")+'</div>';
  return h}
 /* ---------- ADD ---------- */
-function pt(){return (f.g?"G":"")+(f.m?"M":"")}
 function dlabel(){return (date===today()?"Today · ":"")+dt(date).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"short",year:"numeric"})}
-function wl(){var qq=q.trim().toLowerCase(),T=pt(),h="",n=0;
- S.workers.forEach(function(w,i){if(qq&&w.name.toLowerCase().indexOf(qq)<0)return;n++;var x=f.sel[w.name];
-  if(!x){h+='<div class="wk" onclick="tog('+i+')">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+'</b><small>'+(w.wg||w.wm?'🏭 '+inr(w.wg)+' · 🏛️ '+inr(w.wm):'⚠️ Set salary in Workers tab')+'</small></div><span class="plus">＋</span></div>';return}
-  var d=dys(x.s);
-  h+='<div class="wk on"><div class="wh" onclick="tog('+i+')"><div class="av" style="background:#10b981">✓</div><div class="nm"><b>'+esc(w.name)+'</b><small>'+fd(d)+' day · '+(T?inr(rate(w.name,T)*d):'pick place first')+'</small></div><span class="x">✕</span></div><div class="shs">'+KS.map(function(k){return '<button class="'+(x.s.indexOf(k)>-1?'on':'')+'" onclick="sh('+i+',\''+k+'\')">'+LB[k]+'</button>'}).join("")+'</div><div class="row"><input type="number" inputmode="numeric" placeholder="💸 Money ₹" value="'+esc(x.amt||"")+'" style="max-width:118px" oninput="f.sel[S.workers['+i+'].name].amt=this.value"><input placeholder="Note (if sent money)" value="'+esc(x.note||"")+'" oninput="f.sel[S.workers['+i+'].name].note=this.value"></div></div>'});
- return n?h:'<div class="empty">No worker found</div>'}
+function lastP(n){for(var i=S.entries.length-1;i>=0;i--){var e=S.entries[i];for(var j=0;j<e.workers.length;j++){if(e.workers[j].n===n)return e.workers[j].p||etype(e)}}return ""}
+function newSel(n){return{s:["M"],p:lastP(n),mode:"S",h:"",amt:"",note:""}}
+function pvT(w,x){if(x.mode==="H")return x.h?fd(+x.h)+" h · "+inr((w.wh||0)*x.h):"enter hours";var d=dys(x.s);return fd(d)+" day · "+(x.p?inr(rate(w.name,x.p)*d):"pick place")}
+function fsum(){var c=0;Object.keys(f.sel).forEach(function(n){var w=wk(n),x=f.sel[n];if(!w)return;c+=x.mode==="H"?(w.wh||0)*(+x.h||0):(x.p?rate(n,x.p)*dys(x.s):0)});return c}
+function sbtxt(){var k=Object.keys(f.sel).length;return k?(f.id?"Update":"Save")+" attendance · "+k+" workers · "+inr(fsum()):"Add workers to save"}
+function prevDate(){var b="";S.entries.forEach(function(e){if(e.date<date&&e.date>b)b=e.date});return b}
+function xc(w,i,x){
+ var P=function(k,l){var on=x.p.indexOf(k)>-1;return '<button class="pc'+(on?' on':'')+'" onclick="togWP('+i+',\''+k+'\')"><span class="cb2">'+(on?'✓':'')+'</span>'+l+'</button>'};
+ var h='<div class="wk on"><div class="wh"><div class="av" style="background:#10b981">✓</div><div class="nm"><b>'+esc(w.name)+(w.role?'<em>'+esc(w.role)+'</em>':'')+'</b><small id="pv'+i+'">'+pvT(w,x)+'</small></div><span class="x" onclick="tog('+i+')">✕</span></div>';
+ h+='<label>Worked at (tick one or both)</label><div class="pcs">'+P("G","🏭 Godown")+P("M","🏛️ Mahal")+'</div>';
+ if(w.wh>0)h+='<div class="seg"><button class="'+(x.mode!=="H"?'on':'')+'" onclick="setMode('+i+',\'S\')">By shift</button><button class="'+(x.mode==="H"?'on':'')+'" onclick="setMode('+i+',\'H\')">By hours</button></div>';
+ if(x.mode==="H")h+='<div class="row"><input type="number" inputmode="decimal" step="0.5" placeholder="Hours worked" value="'+esc(x.h)+'" oninput="hrs('+i+',this.value)"></div><div class="chips">'+[2,4,6,8,10].map(function(v){return '<button class="chip" onclick="hrs('+i+','+v+',1)">'+v+' h</button>'}).join("")+'</div>';
+ else h+='<div class="shs">'+KS.map(function(k){return '<button class="'+(x.s.indexOf(k)>-1?'on':'')+'" onclick="sh('+i+',\''+k+'\')">'+LB[k]+'</button>'}).join("")+'</div>';
+ return h+'<div class="row"><input type="number" inputmode="numeric" placeholder="💸 Money ₹" value="'+esc(x.amt||"")+'" style="max-width:118px" oninput="f.sel[S.workers['+i+'].name].amt=this.value"><input placeholder="Note (if sent money)" value="'+esc(x.note||"")+'" oninput="f.sel[S.workers['+i+'].name].note=this.value"></div></div>'}
 function vAdd(){
- var ks=Object.keys(f.sel),T=pt(),cp=0;ks.forEach(function(n){cp+=dys(f.sel[n].s)*rate(n,T)});
+ var ks=Object.keys(f.sel),needM=ks.some(function(n){return f.sel[n].p.indexOf("M")>-1}),pd=prevDate();
  var h='<div class="ab"><button class="back" onclick="closeAdd()">‹</button><div><h1>'+(f.id?'Edit attendance':'Add attendance')+'</h1><p>'+dlabel()+'</p></div></div>';
  var ch="",inS=0;for(var k=-6;k<=1;k++){var d=new Date();d.setDate(d.getDate()+k);var s=ymd(d);if(s===date)inS=1;ch+='<button class="dc'+(s===date?' on':'')+'" onclick="date=\''+s+'\';render()"><small>'+d.toLocaleDateString("en-IN",{weekday:"short"})+'</small><b>'+d.getDate()+'</b></button>'}
  ch+='<label class="dc dp'+(inS?'':' on')+'" style="margin:0"><small>Other</small><b>📅</b><input type="date" value="'+date+'" onchange="date=this.value;render()"></label>';
- h+='<div class="card"><label>1 · Date</label><div class="strip" id="strip">'+ch+'</div></div>';
- h+='<div class="card"><label>2 · Where did they work? (tick one or both)</label><div class="pks"><div class="pk'+(f.g?' on':'')+'" onclick="togP(\'g\')"><span class="cb">'+(f.g?'✓':'')+'</span><b>🏭</b>Godown</div><div class="pk'+(f.m?' on':'')+'" onclick="togP(\'m\')"><span class="cb">'+(f.m?'✓':'')+'</span><b>🏛️</b>Mahal</div></div>';
- if(f.m){h+='<label>Mahal / hall name</label><input placeholder="e.g. Sri Mahal" value="'+esc(f.hall)+'" oninput="f.hall=this.value">';var hs=[];S.entries.forEach(function(e){var x=hallOf(e);if(x&&hs.indexOf(x)<0)hs.push(x)});if(hs.length)h+='<div class="chips">'+hs.map(function(x){return '<button class="chip" data-v="'+esc(x)+'" onclick="f.hall=this.dataset.v;render()">'+esc(x)+'</button>'}).join("")+'</div>'}
- if(f.g&&f.m)h+='<p class="hint">Both ticked: the higher of the two salary rates is used.</p>';
+ h+='<div class="card"><label>Date</label><div class="strip" id="strip">'+ch+'</div></div>';
+ h+='<div class="card"><div class="ch"><h2>Team · '+ks.length+'</h2><button class="pill p" onclick="openPick()">＋ Add workers</button></div>';
+ if(!ks.length)h+='<div class="empty">No workers added yet<br>'+(pd?'<button class="pill" onclick="copyPrev()">↺ Copy team from '+sd(pd)+'</button>':'')+'</div>';
+ else h+='<label>Set place for all</label><div class="pcs"><button class="pc" onclick="allP(\'G\')">🏭 All Godown</button><button class="pc" onclick="allP(\'M\')">🏛️ All Mahal</button></div>'+S.workers.map(function(w,i){var x=f.sel[w.name];return x?xc(w,i,x):""}).join("");
  h+='</div>';
- h+='<div class="card"><div class="hd"><label>3 · Workers · '+ks.length+' selected</label>'+(S.workers.length?'<div><button class="pill" onclick="allM()">☀️ All</button><button class="pill d" onclick="clearSel()">Clear</button></div>':'')+'</div>'+(S.workers.length?'<input class="srch" type="search" placeholder="🔍 Search worker name" value="'+esc(q)+'" oninput="setQ(this.value)"><div id="wl">'+wl()+'</div>':'<div class="empty">No workers yet.<br><button class="pill p" onclick="go(\'work\')">Add workers first →</button></div>')+'</div>';
- h+='<button class="btn sb'+(ks.length&&T?'':' off')+'" onclick="saveE()">'+(ks.length&&T?(f.id?'Update':'Save')+' attendance · '+ks.length+' workers · '+inr(cp):(!T?'Tick Godown or Mahal':'Select workers to save'))+'</button>';
- return h}
-function setQ(v){q=v;document.getElementById("wl").innerHTML=wl()}
-function togP(k){f[k]=f[k]?0:1;render()}
-function tog(i){var n=S.workers[i].name;if(f.sel[n])delete f.sel[n];else f.sel[n]={s:["M"],amt:"",note:""};render()}
-function allM(){S.workers.forEach(function(w){if(!f.sel[w.name])f.sel[w.name]={s:["M"],amt:"",note:""}});render()}
-function clearSel(){f.sel={};render()}
+ if(needM){h+='<div class="card"><label>🏛️ Mahal / hall name</label><input placeholder="e.g. Sri Mahal" value="'+esc(f.hall)+'" oninput="f.hall=this.value">';var hs=[];S.entries.forEach(function(e){var x=hallOf(e);if(x&&hs.indexOf(x)<0)hs.push(x)});if(hs.length)h+='<div class="chips" style="margin-bottom:0">'+hs.map(function(x){return '<button class="chip" data-v="'+esc(x)+'" onclick="f.hall=this.dataset.v;render()">'+esc(x)+'</button>'}).join("")+'</div>';h+='</div>'}
+ return h+'<button id="sbb" class="btn sb'+(ks.length?'':' off')+'" onclick="saveE()">'+sbtxt()+'</button>'}
+function pickList(){var qq=pq.trim().toLowerCase(),h="";S.workers.forEach(function(w,i){if(qq&&(w.name+" "+(w.role||"")).toLowerCase().indexOf(qq)<0)return;var on=!!f.sel[w.name];h+='<div class="wk" onclick="pickT('+i+')">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+(w.role?'<em>'+esc(w.role)+'</em>':'')+'</b><small>'+rsub(w)+'</small></div><span class="plus'+(on?' on':'')+'">'+(on?'✓':'＋')+'</span></div>'});return h||'<div class="empty">No worker found</div>'}
+function openPick(){if(!S.workers.length){toast("Add workers in Workers tab first");return}pq="";openM('<h2>Add workers</h2><input type="search" placeholder="🔍 Search worker name" oninput="pq=this.value;document.getElementById(\'pl\').innerHTML=pickList()"><div class="plist" id="pl">'+pickList()+'</div><button class="btn" id="pdn" onclick="closeM()">Done · '+Object.keys(f.sel).length+' selected</button>','tall')}
+function pickT(i){var n=S.workers[i].name;if(f.sel[n])delete f.sel[n];else f.sel[n]=newSel(n);document.getElementById("pl").innerHTML=pickList();document.getElementById("pdn").textContent="Done · "+Object.keys(f.sel).length+" selected"}
+function copyPrev(){var pd=prevDate();if(!pd)return;ents(pd).forEach(function(e){e.workers.forEach(function(x){if(!wk(x.n))return;f.sel[x.n]={s:(x.s&&x.s.length?x.s.slice():["M"]),p:x.p||etype(e),mode:x.h>0?"H":"S",h:x.h||"",amt:"",note:""};if(!f.hall&&hallOf(e))f.hall=hallOf(e)})});toast("Copied from "+sd(pd));render()}
+function tog(i){delete f.sel[S.workers[i].name];render()}
+function allP(k){Object.keys(f.sel).forEach(function(n){f.sel[n].p=k});render()}
+function togWP(i,k){var x=f.sel[S.workers[i].name],a=x.p.indexOf("G")>-1,b=x.p.indexOf("M")>-1;if(k==="G")a=!a;else b=!b;x.p=(a?"G":"")+(b?"M":"");render()}
+function setMode(i,m){f.sel[S.workers[i].name].mode=m;render()}
+function hrs(i,v,r){var w=S.workers[i],x=f.sel[w.name];x.h=v;if(r){render();return}document.getElementById("pv"+i).textContent=pvT(w,x);document.getElementById("sbb").textContent=sbtxt()}
 function sh(i,k){var x=f.sel[S.workers[i].name];if(!x)return;var s=x.s.slice(),j=s.indexOf(k);if(j>-1){if(s.length<2)return;s.splice(j,1)}else{if(k==="H")s=["H"];else{s=s.filter(function(z){return z!=="H"});s.push(k)}}x.s=s;render()}
 function openAdd(){f=newF();date=today();q="";tab="add";render();scrollTo(0,0)}
 function closeAdd(){f=newF();q="";tab="home";render()}
-function saveE(){var ks=Object.keys(f.sel);if(!f.g&&!f.m){toast("Tick Godown or Mahal");return}if(f.m&&!f.hall.trim()){toast("Enter mahal name");return}if(!ks.length){toast("Select workers");return}
- var t=pt(),hall=f.hall.trim(),v=f.g&&f.m?"Godown + "+hall:f.g?"Godown":hall,d=date,id=f.id,ws=ks.map(function(n){return{n:n,s:f.sel[n].s}});
+function saveE(){var ks=Object.keys(f.sel);if(!ks.length){toast("Add workers first");return}
+ var bad="",hg=0,hm=0;ks.forEach(function(n){var x=f.sel[n];if(!x.p)bad=bad||"Choose place for "+n;else if(x.mode==="H"&&!(+x.h>0))bad=bad||"Enter hours for "+n;if(x.p.indexOf("G")>-1)hg=1;if(x.p.indexOf("M")>-1)hm=1});
+ if(bad){toast(bad);return}if(hm&&!f.hall.trim()){toast("Enter mahal name");return}
+ var t=(hg?"G":"")+(hm?"M":""),hall=f.hall.trim(),v=hg&&hm?"Godown + "+hall:hg?"Godown":hall,d=date,id=f.id;
+ var ws=ks.map(function(n){var x=f.sel[n],o={n:n,p:x.p};if(x.mode==="H")o.h=Number(x.h);else o.s=x.s;return o});
  var nts=ks.map(function(n){var x=f.sel[n],w=wk(n),a=Number(x.amt)||0,tx=(x.note||"").trim(),ex=nt(d,w.id);
   if(a||tx)return function(){return sb.from("notes").upsert({date:d,worker_id:w.id,name:n,advance:a,note:tx},{onConflict:"date,worker_id"})};
   if(ex.advance||ex.note)return function(){return sb.from("notes").delete().eq("date",d).eq("worker_id",w.id)};return null}).filter(Boolean);
  var row={date:d,t:t,venue:v,workers:ws},p=id?sb.from("entries").update(row).eq("id",id):sb.from("entries").insert(row);
  f=newF();q="";tab="home";render();
  p.then(function(r){if(r.error){toast(r.error.message);return}return Promise.all(nts.map(function(fn){return fn()})).then(function(){toast("Saved ✓");return load()})})}
-function edit(id){var e=S.entries.filter(function(x){return x.id===id})[0];if(!e)return;var t=etype(e);f=newF();f.id=id;f.g=t.indexOf("G")>-1?1:0;f.m=t.indexOf("M")>-1?1:0;f.hall=hallOf(e);date=e.date;
- e.workers.forEach(function(w){var wr=wk(w.n),n=wr?nt(e.date,wr.id):{advance:0,note:""};f.sel[w.n]={s:w.s.slice(),amt:n.advance||"",note:n.note||""}});tab="add";q="";render();scrollTo(0,0)}
+function edit(id){var e=S.entries.filter(function(x){return x.id===id})[0];if(!e)return;f=newF();f.id=id;f.hall=hallOf(e);date=e.date;
+ e.workers.forEach(function(w){var wr=wk(w.n),n=wr?nt(e.date,wr.id):{advance:0,note:""};f.sel[w.n]={s:(w.s&&w.s.length?w.s.slice():["M"]),p:w.p||etype(e),mode:w.h>0?"H":"S",h:w.h||"",amt:n.advance||"",note:n.note||""}});tab="add";q="";render();scrollTo(0,0)}
 function del(id){confirmM("Delete this attendance entry?","Delete",function(){run(sb.from("entries").delete().eq("id",id),"Deleted")})}
+
 /* ---------- HISTORY ---------- */
 function vHist(){
  var h=hdr("History","All attendance by date")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
@@ -179,33 +205,47 @@ function vHist(){
  if(!ds.length)return h+'<div class="empty">No entries this month</div>';
  return h+ds.map(function(d){return '<div class="card"><div class="ch"><h2>📅 '+sd(d)+'</h2><button class="pill" onclick="send(dayText(\''+d+'\'))">Share</button></div>'+ents(d).map(function(e){return entryHTML(e,1)}).join("")+notesHTML(d)+'</div>'}).join("")}
 /* ---------- WORKERS ---------- */
+function rsub(w){return (w.wg||w.wm||w.wh)?'🏭 '+inr(w.wg)+' · 🏛️ '+inr(w.wm)+(w.wh>0?' · ⏱ '+inr(w.wh)+'/h':''):'⚠️ Set salary (tap Edit)'}
+function wkList(){var qq=wq.trim().toLowerCase(),h="";S.workers.forEach(function(w,i){if(qq&&(w.name+" "+(w.role||"")).toLowerCase().indexOf(qq)<0)return;h+='<div class="wrow">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+(w.role?'<em>'+esc(w.role)+'</em>':'')+'</b><small>'+rsub(w)+'</small></div><button class="pill" onclick="editW('+i+')">Edit</button><button class="pill d" onclick="delW('+i+')">Remove</button></div>'});return h||'<div class="empty">No worker found</div>'}
+function setWq(v){wq=v;document.getElementById("wkl").innerHTML=wkList()}
 function vWork(){
- var h=hdr("Workers","Team &amp; daily salary")+'<div class="card"><h2>➕ New worker</h2><label>Name</label><input id="nw" placeholder="Worker name"><label>🏭 Godown salary / day (₹)</label><input id="ng" type="number" inputmode="numeric" placeholder="e.g. 500"><label>🏛️ Mahal salary / day (₹)</label><input id="nm" type="number" inputmode="numeric" placeholder="e.g. 800"><button class="btn" onclick="addW()">Add worker</button></div><div class="card"><h2>Team ('+S.workers.length+')</h2>';
- h+=S.workers.length?S.workers.map(function(w,i){return '<div class="wrow">'+av(w.name)+'<div class="nm"><b>'+esc(w.name)+'</b><small>🏭 '+inr(w.wg)+' · 🏛️ '+inr(w.wm)+'</small></div><button class="pill" onclick="editW('+i+')">Edit</button><button class="pill d" onclick="delW('+i+')">Remove</button></div>'}).join(""):'<div class="empty">No workers yet</div>';
- return h+'</div><button class="btn g" onclick="logout()">Log out</button>'}
-function addW(){var n=document.getElementById("nw").value.trim(),g=Number(document.getElementById("ng").value)||0,m=Number(document.getElementById("nm").value)||0;if(!n){toast("Enter name");return}run(sb.from("workers").upsert({name:n,wg:g,wm:m},{onConflict:"name"}),"Saved ✓")}
-function editW(i){var w=S.workers[i];openM('<h2>Edit '+esc(w.name)+'</h2><label>🏭 Godown salary / day (₹)</label><input id="e1" type="number" inputmode="numeric" value="'+w.wg+'"><label>🏛️ Mahal salary / day (₹)</label><input id="e2" type="number" inputmode="numeric" value="'+w.wm+'"><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveW('+i+')">Save</button></div>')}
-function saveW(i){var w=S.workers[i],a=Number(document.getElementById("e1").value)||0,b=Number(document.getElementById("e2").value)||0;closeM();run(sb.from("workers").update({wg:a,wm:b}).eq("id",w.id),"Updated ✓")}
+ var h=hdr("Workers","Team &amp; salary rates")+'<div class="card"><h2>➕ New worker</h2><label>Name</label><input id="nw" placeholder="Worker name"><label>Role (optional, e.g. Welder)</label><input id="nr" placeholder="Role"><label>🏭 Godown salary / day (₹)</label><input id="ng" type="number" inputmode="numeric" placeholder="e.g. 500"><label>🏛️ Mahal salary / day (₹)</label><input id="nm" type="number" inputmode="numeric" placeholder="e.g. 800"><label>⏱ Hourly rate (₹/hour) – only for time-based work</label><input id="nh" type="number" inputmode="numeric" placeholder="e.g. 100"><button class="btn" onclick="addW()">Add worker</button></div>';
+ h+='<div class="card"><h2>Team ('+S.workers.length+')</h2>'+(S.workers.length?'<input type="search" placeholder="🔍 Search worker" value="'+esc(wq)+'" oninput="setWq(this.value)"><div id="wkl">'+wkList()+'</div>':'<div class="empty">No workers yet</div>')+'</div>';
+ return h+'<button class="btn g" onclick="logout()">Log out</button>'}
+function addW(){var g=function(i){return document.getElementById(i).value},n=g("nw").trim();if(!n){toast("Enter name");return}run(sb.from("workers").upsert({name:n,role:g("nr").trim(),wg:Number(g("ng"))||0,wm:Number(g("nm"))||0,wh:Number(g("nh"))||0},{onConflict:"name"}),"Saved ✓")}
+function editW(i){var w=S.workers[i];openM('<h2>Edit worker</h2><label>Name</label><input id="e0" value="'+esc(w.name)+'"><label>Role (optional)</label><input id="e5" value="'+esc(w.role||"")+'"><label>🏭 Godown salary / day (₹)</label><input id="e1" type="number" inputmode="numeric" value="'+w.wg+'"><label>🏛️ Mahal salary / day (₹)</label><input id="e2" type="number" inputmode="numeric" value="'+w.wm+'"><label>⏱ Hourly rate (₹/hour)</label><input id="e3" type="number" inputmode="numeric" value="'+(w.wh||0)+'"><div class="r2"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveW('+i+')">Save</button></div>','tall')}
+function saveW(i){var w=S.workers[i],g=function(k){return document.getElementById(k).value},nn=g("e0").trim();if(!nn){toast("Enter name");return}if(nn!==w.name&&wk(nn)){toast("That name already exists");return}
+ var upd={name:nn,role:g("e5").trim(),wg:Number(g("e1"))||0,wm:Number(g("e2"))||0,wh:Number(g("e3"))||0},old=w.name;closeM();
+ sb.from("workers").update(upd).eq("id",w.id).then(function(r){if(r.error){toast(r.error.message);return}
+  var ps=[];if(nn!==old){S.entries.forEach(function(e){if(e.workers.some(function(x){return x.n===old}))ps.push(sb.from("entries").update({workers:e.workers.map(function(x){return x.n===old?Object.assign({},x,{n:nn}):x})}).eq("id",e.id))});ps.push(sb.from("notes").update({name:nn}).eq("worker_id",w.id))}
+  return Promise.all(ps).then(function(){toast("Updated ✓");return load()})})}
 function delW(i){var w=S.workers[i];confirmM("Remove "+w.name+"? Their notes are deleted, past entries stay.","Remove",function(){run(sb.from("workers").delete().eq("id",w.id),"Removed")})}
+
 /* ---------- SALARY ---------- */
+function subT(s){return (s.days?fd(s.days)+" days":"")+(s.days&&s.hrs?" · ":"")+(s.hrs?fd(s.hrs)+" h":"")||"notes only"}
+function salRows(){var r=[];S.workers.forEach(function(w){var s=wstat(w,month);if(s.days||s.hrs||s.nts.length)r.push({w:w,s:s})});return r}
+function salList(){var qq=sq.trim().toLowerCase(),r=salRows().filter(function(x){return !qq||(x.w.name+" "+(x.w.role||"")).toLowerCase().indexOf(qq)>-1});return r.length?r.map(function(x){return '<div class="wrow l" onclick="wdet=\''+x.w.id+'\';render();scrollTo(0,0)">'+av(x.w.name)+'<div class="nm"><b>'+esc(x.w.name)+(x.w.role?'<em>'+esc(x.w.role)+'</em>':'')+'</b><small>'+subT(x.s)+'</small></div><div class="r">'+inr(x.s.pay)+'</div></div>'}).join(""):'<div class="empty">No worker found</div>'}
+function setSq(v){sq=v;document.getElementById("sl").innerHTML=salList()}
 function vSal(){
  if(wdet)return vWdet();
- var h=hdr("Salary","Tap a worker for day-wise salary")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
- var rows=[],tp=0,tm=0;S.workers.forEach(function(w){var s=wstat(w,month);if(s.days||s.nts.length){rows.push({w:w,s:s});tp+=s.pay;s.nts.forEach(function(x){tm+=x.advance})}});
+ var rows=salRows(),tp=0,tm=0;rows.forEach(function(x){tp+=x.s.pay;x.s.nts.forEach(function(n){tm+=n.advance})});
+ var h=hdr("Salary","Tap a worker for day-wise salary")+'<div class="card"><label>Month</label><input type="month" value="'+month+'" onchange="month=this.value;render()"><input type="search" placeholder="🔍 Search worker" value="'+esc(sq)+'" oninput="setSq(this.value)" style="margin:0"></div>';
  h+='<div class="hero"><span>'+ml(month)+' · total salary</span><b>'+inr(tp)+'</b><div class="hs" style="grid-template-columns:1fr 1fr"><div><b>'+rows.length+'</b><span>Workers</span></div><div><b>'+inr(tm)+'</b><span>Money noted</span></div></div></div>';
- h+='<div class="card">'+(rows.length?rows.map(function(x){return '<div class="wrow l" onclick="wdet=\''+x.w.id+'\';render();scrollTo(0,0)">'+av(x.w.name)+'<div class="nm"><b>'+esc(x.w.name)+'</b><small>'+fd(x.s.days)+' days</small></div><div class="r">'+inr(x.s.pay)+'</div></div>'}).join(""):'<div class="empty">No attendance this month</div>')+'</div>';
+ h+='<div class="card"><div class="ch"><h2>Workers</h2>'+(rows.length?'<button class="pill" onclick="send(repAll())">Share all</button>':'')+'</div><div id="sl">'+salList()+'</div></div>';
  return h}
+function repAll(){var r=salRows(),t="Salary – "+ml(month)+"\n\n",g=0;r.forEach(function(x){g+=x.s.pay;t+="• "+x.w.name+": "+subT(x.s)+" = "+inr(x.s.pay)+"\n"});return t+"\nTotal: "+inr(g)}
 function vWdet(){
  var w=S.workers.filter(function(x){return x.id===wdet})[0];if(!w){wdet=null;return vSal()}
  var s=wstat(w,month),g=[];s.rows.forEach(function(r){var l=g[g.length-1];if(l&&l.date===r.date){l.a+=r.a;l.items.push(r)}else g.push({date:r.date,a:r.a,items:[r]})});
- var h='<div class="ab"><button class="back" onclick="wdet=null;render()">‹</button><div><h1>'+esc(w.name)+'</h1><p>'+ml(month)+'</p></div></div><div class="card"><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
- h+='<div class="hero"><span>Total salary</span><b>'+inr(s.pay)+'</b><div class="hs" style="grid-template-columns:1fr 1fr"><div><b>'+fd(s.days)+'</b><span>Days worked</span></div><div><b>'+g.length+'</b><span>Dates</span></div></div></div>';
- h+='<div class="card"><h2>📅 Day-wise salary</h2>'+(g.length?g.map(function(x){return '<div class="dr"><div class="dh"><span>'+sd(x.date)+'</span><span>'+inr(x.a)+'</span></div>'+x.items.map(function(r){return '<p>'+esc(r.venue)+' · '+lbl(r.s)+'</p>'}).join("")+'</div>'}).join("")+'<div class="tr"><span>Total</span><span>'+inr(s.pay)+'</span></div>':'<div class="empty">No attendance this month</div>')+'</div>';
+ var h='<div class="ab"><button class="back" onclick="wdet=null;render()">‹</button><div><h1>'+esc(w.name)+'</h1><p>'+(w.role?esc(w.role)+' · ':'')+ml(month)+'</p></div></div><div class="card"><input type="month" value="'+month+'" onchange="month=this.value;render()" style="margin:0"></div>';
+ h+='<div class="hero"><span>Total salary</span><b>'+inr(s.pay)+'</b><div class="hs"><div><b>'+fd(s.days)+'</b><span>Days worked</span></div><div><b>'+fd(s.hrs)+'</b><span>Hours</span></div><div><b>'+g.length+'</b><span>Dates</span></div></div></div>';
+ h+='<div class="card"><h2>📅 Day-wise salary</h2>'+(g.length?g.map(function(x){return '<div class="dr"><div class="dh"><span>'+sd(x.date)+'</span><span>'+inr(x.a)+'</span></div>'+x.items.map(function(r){return '<p>'+pl(r.p)+' '+esc(r.venue)+' · '+(r.h?fd(r.h)+' h':lbl(r.s))+'</p>'}).join("")+'</div>'}).join("")+'<div class="tr"><span>Total</span><span>'+inr(s.pay)+'</span></div>':'<div class="empty">No attendance this month</div>')+'</div>';
  h+='<div class="card"><h2>💸 Money given (note only)</h2>'+(s.nts.length?s.nts.map(function(x){return '<div class="dr"><div class="dh"><span>'+sd(x.date)+'</span><span>'+(x.advance?inr(x.advance):'')+'</span></div>'+(x.note?'<p>'+esc(x.note)+'</p>':'')+'</div>'}).join(""):'<div class="empty">No notes this month</div>')+'</div>';
  return h+'<button class="btn" onclick="send(wText())">Share statement</button>'}
 function wText(){var w=S.workers.filter(function(x){return x.id===wdet})[0],s=wstat(w,month),t=w.name+" – "+ml(month)+"\n\n";
- var last="";s.rows.forEach(function(r){t+=sd(r.date)+" – "+inr(r.a)+" ("+r.venue+", "+lbl(r.s)+")\n"});t+="\nTotal: "+inr(s.pay);
+ s.rows.forEach(function(r){t+=sd(r.date)+" – "+inr(r.a)+" ("+r.venue+", "+(r.h?fd(r.h)+" h":lbl(r.s))+")\n"});t+="\nTotal: "+inr(s.pay);
  if(s.nts.length)t+="\n\nMoney given:\n"+s.nts.map(function(x){return sd(x.date)+" – "+(x.advance?inr(x.advance):"")+(x.note?" "+x.note:"")}).join("\n");return t}
+
 /* ---------- NAV / RENDER ---------- */
 function go(t){tab=t;wdet=null;render();scrollTo(0,0)}
 function render(){
@@ -218,7 +258,7 @@ function render(){
 /* ---------- DATA / AUTH ---------- */
 function run(p,msg){return p.then(function(r){if(r.error){toast(r.error.message);return}toast(msg);return load()})}
 function load(){Promise.all([sb.from("workers").select("*"),sb.from("entries").select("*"),sb.from("notes").select("*")]).then(function(r){var bad=r.filter(function(x){return x.error})[0];if(bad){dbErr=1;toast(bad.error.message);render();return}dbErr=0;
- S.workers=r[0].data.map(function(o){return{id:o.id,name:o.name,wg:Number(o.wg),wm:Number(o.wm)}}).sort(function(a,b){return a.name.localeCompare(b.name)});
+ S.workers=r[0].data.map(function(o){return{id:o.id,name:o.name,role:o.role||"",wg:Number(o.wg),wm:Number(o.wm),wh:Number(o.wh||0)}}).sort(function(a,b){return a.name.localeCompare(b.name)});
  S.entries=r[1].data.map(function(o){return{id:o.id,date:o.date,t:o.t,venue:o.venue,workers:o.workers||[]}}).sort(function(a,b){return a.date<b.date?-1:1});
  S.notes=r[2].data.map(function(o){return{id:o.id,date:o.date,wid:o.worker_id,name:o.name,advance:Number(o.advance),note:o.note||""}});ready=7;render()})}
 function staff(){return user&&(user.app_metadata||{}).role==="staff"}
