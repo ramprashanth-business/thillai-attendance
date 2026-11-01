@@ -12,3 +12,11 @@ create policy staff_all on public.notes for all to authenticated using ((auth.jw
 
 -- Approve a user (replace the email) AFTER creating them in Authentication > Users:
 -- update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"staff"}' where email = 'you@example.com';
+
+
+-- Compatibility migration for the current app fields and combined Godown + Mahal entries.
+-- Safe to run on an existing project; does not delete attendance data.
+alter table public.workers add column if not exists role text not null default '';
+alter table public.workers add column if not exists wh numeric not null default 0;
+alter table public.entries drop constraint if exists entries_t_check;
+alter table public.entries add constraint entries_t_check check (t in ('G','M','GM'));
